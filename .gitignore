@@ -1,0 +1,20 @@
+# Dossier de compilation Maven
+target/
+*.class
+
+# Fichiers de logs
+*.log
+
+# Fichiers de configuration des IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+MavenPackageToken.txt
