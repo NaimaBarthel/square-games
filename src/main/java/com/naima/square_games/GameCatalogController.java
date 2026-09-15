@@ -4,6 +4,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
+import java.util.Locale;
+
 @RestController
 public class GameCatalogController {
     //Déclaration de la dépendance en lecture seule
@@ -14,10 +16,9 @@ public class GameCatalogController {
         this.gameCatalog = gameCatalog;
     }
 
-    //Exposition de la ressource en GET  /games
-    @GetMapping("/games")
-    public Collection<String> getGames(){
-        return gameCatalog.getGameIds();
+    @GetMapping("/catalog")
+    public Collection<String> getCatalog(Locale locale) {
+        return gameCatalog.getGameNames(locale);
     }
 
 
