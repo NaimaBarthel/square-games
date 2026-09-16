@@ -3,6 +3,9 @@ package com.naima.square_games.plugin;
 import fr.le_campus_numerique.square_games.engine.Game;
 import java.util.Locale;
 
+/**
+ * Contrat définissant le comportement d'un plugin de jeu intégrable au catalogue.
+ */
 public interface GamePlugin
 {
     /**
@@ -16,7 +19,7 @@ public interface GamePlugin
      * @param locale la langue cible (français, anglais, etc.)
      * @return le libellé traduit du jeu
      */
-    String getName(Locale local);
+    String getName(Locale locale);
 
     /**
      * Crée une nouvelle partie.
@@ -26,6 +29,6 @@ public interface GamePlugin
      * @param boardSize dimension du plateau souhaitée (peut être null)
      * @return la partie initialisée
      */
-    Game createGame(Integer playerCount, Integer bordSize);
+    Game createGame(Integer playerCount, Integer boardSize);
 
 }

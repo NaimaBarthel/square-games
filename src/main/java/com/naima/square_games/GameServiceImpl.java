@@ -26,9 +26,22 @@ public class GameServiceImpl implements GameService{
 
     // Spring injecte automatiquement tous les beans qui implémentent GamePlugin
     public GameServiceImpl(List<GamePlugin> pluginList) {
+        // 1. On initialise une Map vide
+        this.plugins = new HashMap<>();
+
+        // 2. On parcourt chaque plugin de la liste un par un
+        for (GamePlugin plugin : pluginList) {
+            // 3. On range le plugin dans la Map :
+            // Clé = son identifiant (ex: "tictactoe")
+            // Valeur = le plugin lui-même
+            this.plugins.put(plugin.getId(), plugin);
+        }
+    }
+    //En Java moderne
+    /*public GameServiceImpl(List<GamePlugin> pluginList) {
         this.plugins = pluginList.stream()
                 .collect(Collectors.toMap(GamePlugin::getId, plugin -> plugin));
-    }
+    }*/
 
 
     /**
@@ -57,11 +70,10 @@ public class GameServiceImpl implements GameService{
         GamePlugin plugin = plugins.get(params.gameType());
 
         if (plugin == null){
-            throw new IllegalArgumentException("Type de jeu inconnu" + params.gameType());
+            throw new IllegalArgumentException("Type de jeu inconnu " + params.gameType());
         }
-        // 2. On délègue la création au plugin (qui applique les valeurs par défaut si null)
-        // Note : si params ne contient pas encore playerCount, passe null pour l'instant
-        Game game = plugin.createGame(null, params.boardSize());
+        // 2. On délègue la création au plugin (qui applique les valeurs par défaut si les paramètres sont null/vides)
+        Game game = plugin.createGame(params.playerCount(), params.boardSize());
 
         // 3. On stocke la partie créée // Sauvegarde dans la Map en mémoire
         games.put(game.getId(),game);
