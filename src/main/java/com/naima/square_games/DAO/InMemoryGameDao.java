@@ -1,5 +1,5 @@
-package com.naima.square_games.dao;
-
+package com.naima.square_games.DAO;
+import com.naima.square_games.DAO.GameDao;
 import fr.le_campus_numerique.square_games.engine.Game;
 import org.springframework.stereotype.Repository;
 
@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 @Repository
-public class InMemoryGameDao implements com.naima.square_games.dao.GameDao {
+public class InMemoryGameDao implements GameDao {
 
     private final Map<String, Game> games = new ConcurrentHashMap<>();
 

@@ -1,7 +1,7 @@
 package com.naima.square_games;
 
 import com.naima.square_games.plugin.GamePlugin;
-import com.naima.square_games.dao.GameDao;
+import com.naima.square_games.DAO.GameDao;
 import fr.le_campus_numerique.square_games.engine.CellPosition;
 import fr.le_campus_numerique.square_games.engine.Game;
 import fr.le_campus_numerique.square_games.engine.InvalidPositionException;
