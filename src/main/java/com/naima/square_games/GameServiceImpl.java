@@ -1,6 +1,7 @@
 package com.naima.square_games;
 
 import com.naima.square_games.plugin.GamePlugin;
+import com.naima.square_games.dao.GameDao;
 import fr.le_campus_numerique.square_games.engine.CellPosition;
 import fr.le_campus_numerique.square_games.engine.Game;
 import fr.le_campus_numerique.square_games.engine.InvalidPositionException;
@@ -14,18 +15,23 @@ import java.util.stream.Collectors;
 
 @Service
 public class GameServiceImpl implements GameService{
-    //Stockage en mémoire des parties en cours (clé : UUID de la partie, valeur : le Game )
-    private final Map<UUID, Game> games = new ConcurrentHashMap<>();
+    // Référence vers le DAO pour déléguer les opérations de persistance (stockage/lecture)
+    private final GameDao gameDao;
 
-    /**est remplacé par utilisation de GamePlugin
-    //Factory pour fabriquer le jeu TicTacToe
-    private final TicTacToeGameFactory ticTacToeGameFactory = new TicTacToeGameFactory();
+    /* A supprimer pour injecter DAO
+    //Stockage en mémoire des parties en cours (clé : UUID de la partie, valeur : le Game )
+    //private final Map<UUID, Game> games = new ConcurrentHashMap<>();
     */
+
+    // Table de correspondance associant l'identifiant technique d'un jeu (clé) à son plugin (valeur)
     // Table de correspondance : clé = "tictactoe", valeur = instance de TicTacToePlugin
     private final Map<String, GamePlugin> plugins;
 
     // Spring injecte automatiquement tous les beans qui implémentent GamePlugin
-    public GameServiceImpl(List<GamePlugin> pluginList) {
+    public GameServiceImpl(GameDao gameDao,List<GamePlugin> pluginList) {
+        //0.Initialisation du DAO injecté par Spring
+        this.gameDao = gameDao;
+
         // 1. On initialise une Map vide
         this.plugins = new HashMap<>();
 
@@ -75,10 +81,13 @@ public class GameServiceImpl implements GameService{
         // 2. On délègue la création au plugin (qui applique les valeurs par défaut si les paramètres sont null/vides)
         Game game = plugin.createGame(params.playerCount(), params.boardSize());
 
+        /* A supprimer pour injecter DAO
         // 3. On stocke la partie créée // Sauvegarde dans la Map en mémoire
         games.put(game.getId(),game);
-
         return game;
+        */
+        // 3. Persistance de la partie via le DAO (remplace l'ancien games.put())
+        return gameDao.upsert(game);
     }
 
 
@@ -92,8 +101,13 @@ public class GameServiceImpl implements GameService{
      */
     @Override
     public Optional<Game> getGame(UUID gameId) {
+        /** A supprimer pour injecter DAO
         Game game = games.get(gameId);
         return ((game != null) ? Optional.of(game) : Optional.empty());
+        */
+        // On délègue la recherche au DAO en convertissant l'UUID en String.
+        // findById renvoie déjà un Optional<Game>, le code est direct et concis.
+        return gameDao.findById(gameId.toString());
     }
 
 
@@ -112,10 +126,24 @@ public class GameServiceImpl implements GameService{
      */
     @Override
     public Collection<CellPosition> getAllowedMoves(UUID gameId, String tokenId) {
+       /* A supprimer pour injecter DAO
         Game game = games.get(gameId);
+
         if (game == null) {
             return Set.of(); // Si la partie n'existe pas, liste vide
         }
+
+        */
+        // 1. Recherche de la partie via le DAO
+        Optional<Game> gameOptional = gameDao.findById(gameId.toString());
+
+        // 2. Si la partie n'existe pas, on renvoie une liste vide
+        if (gameOptional.isEmpty()) {
+            return Set.of();
+        }
+
+        //  3. On extrait l'instance réelle de Game contenue dans l'Optional (garantie présente après la vérification isEmpty)
+        Game game = gameOptional.get();
 
         // Recherche du jeton dans les jetons restants
         return game.getRemainingTokens().stream()
@@ -126,38 +154,43 @@ public class GameServiceImpl implements GameService{
     }
 
     /**
-     * Exécute un coup sur le plateau de jeu en déplaçant le jeton du joueur actif.
-     * <p>
-     * La méthode sélectionne automatiquement le jeton qui a actuellement le droit
-     * de jouer (en tête de file d'attente), puis tente de le placer à la position demandée.
-     * </p>
+     * Exécute un coup sur le plateau en déplaçant le jeton actif,
+     * puis sauvegarde le nouvel état de la partie via le DAO.
      *
-     * @param gameId l'identifiant unique ({@link UUID}) de la partie en cours.
-     * @param moveParams les paramètres du coup contenant notamment la {@link fr.le_campus_numerique.square_games.engine.CellPosition} ciblée.
-     * @return l'instance de {@link Game} mise à jour avec le jeton placé sur le plateau.
-     * @throws java.util.NoSuchElementException si aucune partie ne correspond au {@code gameId} fourni.
-     * @throws IllegalStateException si aucun jeton n'est en état de jouer (ex. partie déjà terminée ou aucun coup possible).
-     * @throws InvalidPositionException si la case demandée est invalide (hors limites du plateau ou déjà occupée).
+     * @param gameId identifiant unique de la partie
+     * @param moveParams coordonnées de destination du coup
+     * @return l'instance de {@link Game} mise à jour et persistée
+     * @throws NoSuchElementException si la partie n'existe pas dans le DAO
+     * @throws IllegalStateException si aucun jeton ne peut jouer
+     * @throws InvalidPositionException si le coup est invalide selon les règles du jeu
      */
     @Override
     public Game makeMove(UUID gameId, MoveParams moveParams) throws InvalidPositionException {
+         /* A supprimer pour injecter DAO
         Game game = games.get(gameId);
-        // On vérifie si la partie demandée existe dans la Map en mémoire
+         // On vérifie si la partie demandée existe dans la Map en mémoire
         if(game == null){
             //Si la partie n'existe pas, on lève une exception
             throw new NoSuchElementException("Partie introuvable : "+ gameId);
         }
+        */
+        // 1. Récupération de la partie depuis le DAO ou levée d'une exception si absente
+        Game game = gameDao.findById(gameId.toString())
+                .orElseThrow(() -> new NoSuchElementException("Partie introuvable : " + gameId));
 
-        //Récupérer le jeton actif (celui en tête qui a le droit de jouer)
+       // 2. Récupérer le jeton actif (celui en tête qui a le droit de jouer)
         Token currentToken = game.getRemainingTokens().stream()
                 .filter(Token::canMove)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Aucun coup possible actuellement"));
 
-        //Exécuter le coup sur le plateau
+        // 3. Exécuter le coup sur le plateau
         currentToken.moveTo(moveParams.position());
-
+        /* A supprimer pour injecter DAO
         return game;
+        */
 
+        // 4. Enregistrement de l'état modifié dans le DAO et retour du jeu
+        return gameDao.upsert(game);
     }
 }
