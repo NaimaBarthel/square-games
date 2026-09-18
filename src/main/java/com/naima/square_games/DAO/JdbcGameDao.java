@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Repository
-@Primary
+@Primary  //utiliser en priorité cette interface :la base de données PostgreSQL plutôt que l'interface InMemoryGameDao qui gère la version en mémoire.
 public class JdbcGameDao  implements GameDao{
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -36,7 +36,7 @@ public class JdbcGameDao  implements GameDao{
         //    Cette lambda implémente la méthode RowMapper.mapRow(ResultSet rs, int rowNum).
         //    Elle est appelée automatiquement par Spring pour chaque ligne renvoyée par un SELECT.
         this.gameRowMapper = (rs,rowNum) -> {
-        // Extraction des données scalaires stockées dans les colonnes SQL
+        // Extraction des données stockées dans les colonnes SQL
         String factoryId = rs.getString("factory_id");  // Nom technique du type de jeu (ex: "tic-tac-toe")
         int playerCount = rs.getInt("player_count");    // Nombre de joueurs configuré
         int boardSize = rs.getInt("board_size");        // Taille du plateau en cases
