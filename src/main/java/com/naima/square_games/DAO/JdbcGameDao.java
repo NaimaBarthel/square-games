@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Repository
-@Primary  //utiliser en priorité cette interface :la base de données PostgreSQL plutôt que l'interface InMemoryGameDao qui gère la version en mémoire.
+//@Primary  //utiliser en priorité cette interface :la base de données PostgreSQL plutôt que l'interface InMemoryGameDao qui gère la version en mémoire.
 public class JdbcGameDao  implements GameDao{
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
