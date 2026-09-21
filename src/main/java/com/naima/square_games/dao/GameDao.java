@@ -1,4 +1,4 @@
-package com.naima.square_games.DAO;
+package com.naima.square_games.dao;
 
 import fr.le_campus_numerique.square_games.engine.Game;
 

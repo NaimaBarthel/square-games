@@ -1,4 +1,4 @@
-package com.naima.square_games.DAO;
+package com.naima.square_games.dao.entities;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;

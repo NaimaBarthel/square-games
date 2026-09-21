@@ -1,4 +1,4 @@
-package com.naima.square_games;
+package com.naima.square_games.services;
 
 import java.util.Collection;
 import java.util.Locale;

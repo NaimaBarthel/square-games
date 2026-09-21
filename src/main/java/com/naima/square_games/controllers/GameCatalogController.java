@@ -1,5 +1,6 @@
-package com.naima.square_games;
+package com.naima.square_games.controllers;
 
+import com.naima.square_games.services.GameCatalog;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 

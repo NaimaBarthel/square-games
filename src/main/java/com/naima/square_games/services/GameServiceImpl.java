@@ -1,17 +1,16 @@
-package com.naima.square_games;
+package com.naima.square_games.services;
 
+import com.naima.square_games.controllers.dto.GameCreationParams;
+import com.naima.square_games.controllers.dto.MoveParams;
 import com.naima.square_games.plugin.GamePlugin;
-import com.naima.square_games.DAO.GameDao;
+import com.naima.square_games.dao.GameDao;
 import fr.le_campus_numerique.square_games.engine.CellPosition;
 import fr.le_campus_numerique.square_games.engine.Game;
 import fr.le_campus_numerique.square_games.engine.InvalidPositionException;
 import fr.le_campus_numerique.square_games.engine.Token;
-import fr.le_campus_numerique.square_games.engine.tictactoe.TicTacToeGameFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class GameServiceImpl implements GameService{

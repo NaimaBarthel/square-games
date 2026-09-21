@@ -1,5 +1,6 @@
-package com.naima.square_games.DAO;
+package com.naima.square_games.dao.repositories;
 
+import com.naima.square_games.dao.entities.GameEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

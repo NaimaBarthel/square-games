@@ -1,5 +1,9 @@
-package com.naima.square_games;
+package com.naima.square_games.controllers;
 
+import com.naima.square_games.controllers.dto.GameCreationParams;
+import com.naima.square_games.controllers.dto.GameDto;
+import com.naima.square_games.services.GameService;
+import com.naima.square_games.controllers.dto.MoveParams;
 import fr.le_campus_numerique.square_games.engine.CellPosition;
 import fr.le_campus_numerique.square_games.engine.Game;
 import fr.le_campus_numerique.square_games.engine.InvalidPositionException;

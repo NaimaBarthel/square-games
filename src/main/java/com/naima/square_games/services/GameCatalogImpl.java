@@ -1,7 +1,6 @@
-package com.naima.square_games;
+package com.naima.square_games.services;
 
 import com.naima.square_games.plugin.GamePlugin;
-import fr.le_campus_numerique.square_games.engine.tictactoe.TicTacToeGameFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;

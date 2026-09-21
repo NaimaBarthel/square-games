@@ -1,4 +1,4 @@
-package com.naima.square_games;
+package com.naima.square_games.heartbeat;
 
 import org.springframework.stereotype.Service;
 

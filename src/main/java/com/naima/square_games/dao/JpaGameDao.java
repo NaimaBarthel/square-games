@@ -1,5 +1,8 @@
-package com.naima.square_games.DAO;
+package com.naima.square_games.dao;
 
+import com.naima.square_games.dao.entities.GameEntity;
+import com.naima.square_games.dao.entities.GameTokenEntity;
+import com.naima.square_games.dao.repositories.GameEntityRepository;
 import com.naima.square_games.plugin.GamePlugin;
 import fr.le_campus_numerique.square_games.engine.Game;
 import fr.le_campus_numerique.square_games.engine.Token;

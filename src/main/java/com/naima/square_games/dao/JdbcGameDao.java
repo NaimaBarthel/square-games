@@ -1,9 +1,7 @@
-package com.naima.square_games.DAO;
-import com.naima.square_games.DAO.GameDao;
+package com.naima.square_games.dao;
 
 import com.naima.square_games.plugin.GamePlugin;
 import fr.le_campus_numerique.square_games.engine.Game;
-import org.springframework.context.annotation.Primary;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
