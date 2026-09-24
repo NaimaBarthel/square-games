@@ -48,9 +48,18 @@ public class GameController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public GameDto createGame(@RequestBody GameCreationParams params) {
-        Game game = gameService.createGame(params);
-        return GameDto.fromGame(game);
+    public ResponseEntity<?> createGame(@RequestHeader("X-UserId") String userId, @RequestBody GameCreationParams params) {
+        try {
+            Game game = gameService.createGame(userId, params);
+            //return GameDto.fromGame(game);
+            //HTTP 201 Created
+            return ResponseEntity.status(HttpStatus.CREATED).body(GameDto.fromGame(game));
+        } catch (SecurityException e) {
+            //HTTP 403 Forbidden si l'utilisateur est inconnu dans square-users
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e){
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     //EndPoint 2 : Récupérer l'état d'une partie
@@ -138,18 +147,44 @@ public class GameController {
      */
     @PostMapping("/{gameId}/moves")
     public ResponseEntity<?> makeMove(
+            @RequestHeader("X-UserId") String userId,
             @PathVariable UUID gameId,
             @RequestBody MoveParams moveParams
     ){
         try{
-            Game updatedGame = gameService.makeMove(gameId,moveParams);
+            // On passe userId au service pour qu'il vérifie le tour du joueur
+            Game updatedGame = gameService.makeMove(userId,gameId,moveParams);
             return ResponseEntity.ok(updatedGame);
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();  //404 si la partie n'existe pas
+        } catch (SecurityException e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));  //403 Forbidden si ce n'est pas le tour de ce joueur
         } catch (InvalidPositionException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));  //400 si coup interdit
         }
     }
 
-
+    // EndPoint 5: Récupérer la liste des parties du joueur connecté
+    /**
+     * Endpoint REST permettant de récupérer la liste de toutes les parties
+     * auxquelles participe l'utilisateur demandeur.
+     * <p>
+     * Filtre les parties stockées pour ne retourner que celles où l'identifiant
+     * transmis dans l'en-tête {@code X-UserId} figure parmi les joueurs inscrits.
+     * </p>
+     *
+     * @param userId l'identifiant du joueur extrait de l'en-tête HTTP {@code X-UserId}.
+     * @return la liste des {@link GameDto} représentant les parties associées au joueur.
+     */
+    @GetMapping
+    public List<GameDto> getGamesForUser(@RequestHeader("X-UserId") String userId){
+        System.out.println("GameController -- getGamesForuser>>> X-UserId validé : " + userId);
+        Collection<Game> games = gameService.getGamesForUser(userId)
+     /*   List<GameDto> dtos = games.stream()                  // 1. Ouvre le flux
+                .map(GameDto::fromGame)    // 2. Transforme chaque Game en GameDto
+                .toList();                 // 3. Rassemble dans une List*/
+        return games.stream()
+                .map(GameDto::fromGame)    // 2. Transforme chaque Game en GameDto
+                .toList();
+    }
 }

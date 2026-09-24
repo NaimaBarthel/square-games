@@ -14,27 +14,32 @@ import java.util.*;
 
 @Service
 public class GameServiceImpl implements GameService{
-    // Référence vers le DAO pour déléguer les opérations de persistance (stockage/lecture)
-    private final GameDao gameDao;
-
     /* A supprimer pour injecter DAO
     //Stockage en mémoire des parties en cours (clé : UUID de la partie, valeur : le Game )
     //private final Map<UUID, Game> games = new ConcurrentHashMap<>();
     */
 
+    // Référence vers le DAO pour déléguer les opérations de persistance (stockage/lecture)
+    private final GameDao gameDao;
+
     // Table de correspondance associant l'identifiant technique d'un jeu (clé) à son plugin (valeur)
     // Table de correspondance : clé = "tictactoe", valeur = instance de TicTacToePlugin
     private final Map<String, GamePlugin> plugins;
 
+    //Déclaration du client
+    private final UserRestClient userRestClient;
+
     // Spring injecte automatiquement tous les beans qui implémentent GamePlugin
-    public GameServiceImpl(GameDao gameDao,List<GamePlugin> pluginList) {
-        //0.Initialisation du DAO injecté par Spring
+    public GameServiceImpl(GameDao gameDao, List<GamePlugin> pluginList, UserRestClient userRestClient, UserRestClient userRestClient1) {
+        //Initialisation du DAO injecté par Spring
         this.gameDao = gameDao;
 
-        // 1. On initialise une Map vide
+        //On initialise une Map vide
         this.plugins = new HashMap<>();
 
-        // 2. On parcourt chaque plugin de la liste un par un
+        this.userRestClient = userRestClient1;
+
+        //On parcourt chaque plugin de la liste un par un
         for (GamePlugin plugin : pluginList) {
             // 3. On range le plugin dans la Map :
             // Clé = son identifiant (ex: "tictactoe")
@@ -50,17 +55,19 @@ public class GameServiceImpl implements GameService{
 
 
     /**
-     * Crée et initialise une nouvelle partie de jeu avec les paramètres fournis,
-     * puis l'enregistre en mémoire.
-     * <p>
-     * Applique des valeurs par défaut si les paramètres transmis sont invalides
-     * ou non renseignés (2 joueurs et plateau 3x3 pour le Morpion).
+     * Crée et initialise une nouvelle partie après validation de l'utilisateur demandeur
+     * auprès du microservice distant square-users, puis l'enregistre en base de données.
+     * L'identifiant de l'utilisateur demandeur est placé en tête de la liste des joueurs
+     * pour lui attribuer la main et le premier jeton.
      *
-     * @param params paramètres de configuration de la partie à créer
-     * @return l'instance du jeu {@link Game} nouvellement créée et stockée
+     * @param userId identifiant du joueur créateur extrait de l'en-tête HTTP X-UserId.
+     * @param params paramètres de configuration de la partie demandée (type de jeu, taille du plateau, etc.).
+     * @return l'instance de {@link Game} nouvellement créée et persistée.
+     * @throws SecurityException si l'identifiant {@code userId} n'existe pas dans le service des utilisateurs.
+     * @throws IllegalArgumentException si le type de jeu demandé ne correspond à aucun plugin enregistré.
      */
     @Override
-    public Game createGame(GameCreationParams params) {
+    public Game createGame(String userId, GameCreationParams params) {
         /**est remplacé par utilisation de GamePlugin
         // Sécurité sur les paramètres par défaut si le client n'envoie rien ou des valeurs invalides
         int playerCount = (params.playerCount() > 0) ? params.playerCount() : 2;
@@ -69,23 +76,34 @@ public class GameServiceImpl implements GameService{
         // Appel de la factory du moteur de jeu
         Game game = ticTacToeGameFactory.createGame(playerCount,boardSize);
         */
+        //0. Vérification de l'existence de l'utilisateur via l'API distante square-users
+        if(!userRestClient.checkUserExists(userId)){
+            throw new SecurityException("Utilisateur non reconnu ou inexistant : " + userId);
+        }
+
+        System.out.println(">>> X-UserId validé : " + userId);
         System.out.println(">>> Params reçus : " + params);
         System.out.println(">>> Plugins chargés dans la map : " + plugins.keySet());
+
         // 1. On cherche le plugin correspondant à l'identifiant demandé (ex: "tictactoe")
         GamePlugin plugin = plugins.get(params.gameType());
 
         if (plugin == null){
             throw new IllegalArgumentException("Type de jeu inconnu " + params.gameType());
         }
-        // 2. On délègue la création au plugin (qui applique les valeurs par défaut si les paramètres sont null/vides)
-        Game game = plugin.createGame(params.playerCount(), params.boardSize());
 
-        /* A supprimer pour injecter DAO
-        // 3. On stocke la partie créée // Sauvegarde dans la Map en mémoire
-        games.put(game.getId(),game);
-        return game;
-        */
-        // 3. Persistance de la partie via le DAO (remplace l'ancien games.put())
+        // 2. Préparation de la liste ordonnée des joueurs
+        List<UUID> players = new ArrayList<>();
+        players.add(UUID.fromString(userId));    // Le créateur est le premier joueur (joueur actif)
+
+        //Ajout d'un adversaire par défaut (le 2e joueur) avec UUID créé aléatoirement
+        players.add(UUID.randomUUID());
+
+        System.out.println("GameServiceImpl -- createGame players : >>>> " + players.toString());
+        // 3. Initialisation du plateau avec les joueurs définis
+        Game game = plugin.createGame(players, params.boardSize());
+
+        // 4. Persistance de la partie via le DAO (remplace l'ancien games.put())
         return gameDao.upsert(game);
     }
 
@@ -164,7 +182,7 @@ public class GameServiceImpl implements GameService{
      * @throws InvalidPositionException si le coup est invalide selon les règles du jeu
      */
     @Override
-    public Game makeMove(UUID gameId, MoveParams moveParams) throws InvalidPositionException {
+    public Game makeMove(String userId,UUID gameId, MoveParams moveParams) throws InvalidPositionException {
          /* A supprimer pour injecter DAO
         Game game = games.get(gameId);
          // On vérifie si la partie demandée existe dans la Map en mémoire
@@ -183,13 +201,42 @@ public class GameServiceImpl implements GameService{
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Aucun coup possible actuellement"));
 
-        // 3. Exécuter le coup sur le plateau
+        //3. VÉRIFICATION DU JOUEUR ACTIF (Contrainte HTTP 403)
+        // Vérifie si le propriétaire du jeton actif correspond à l'en-tête X-UserId
+        if(currentToken.getOwnerId().isEmpty() || !currentToken.getOwnerId().get().toString().equals(userId)){
+            throw new SecurityException("Ce n'est pas votre tour de jouer !");
+        }
+        // 4. Exécuter le coup sur le plateau
         currentToken.moveTo(moveParams.position());
         /* A supprimer pour injecter DAO
         return game;
         */
 
-        // 4. Enregistrement de l'état modifié dans le DAO et retour du jeu
+        // 5. Enregistrement de l'état modifié dans le DAO et retour du jeu
         return gameDao.upsert(game);
+    }
+
+    /**
+     * Récupère toutes les parties enregistrées dans le DAO, puis ne conserve
+     * que celles dont la liste des joueurs contient l'identifiant fourni.
+     *
+     * @param userId l'identifiant du joueur (issu de X-UserId).
+     * @return la collection filtrée des parties du joueur.
+     */
+    @Override
+    public Collection<Game> getGamesForUser(String userId){
+        UUID playerUuid = UUID.fromString(userId);
+
+        List<Game> allGames = gameDao.findAll().toList();
+        System.out.println(">>> TOTAL PARTIES DANS DAO : " + allGames.size());
+        for (Game g : allGames) {
+            System.out.println(">>> PARTIE : " + g.getId() + " - JOUEURS : " + g.getPlayerIds());
+        }
+
+        //On récupère toutes les parties du joueur userId depuis le DAO, et on filtre sur les joueurs
+        return allGames.stream()
+                .filter(game -> game.getPlayerIds().contains(playerUuid))
+                .toList();
+
     }
 }

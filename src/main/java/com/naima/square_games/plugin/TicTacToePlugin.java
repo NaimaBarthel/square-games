@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
-import java.util.Locale;
+import java.util.*;
 
 @Component
 public class TicTacToePlugin implements GamePlugin {
@@ -21,6 +21,11 @@ public class TicTacToePlugin implements GamePlugin {
     @Value("${game.tictactoe.default-board-size}")
     private int defaultBoardSize;
 
+    /**
+     * Construit le plugin en injectant la source de messages pour l'internationalisation.
+     *
+     * @param messageSource composant de gestion des messages i18n.
+     */
     public TicTacToePlugin(MessageSource messageSource) {
         this.messageSource = messageSource;
     }
@@ -41,4 +46,21 @@ public class TicTacToePlugin implements GamePlugin {
         int actualBoardSize = (boardSize != null) ? boardSize : defaultBoardSize;
         return factory.createGame(actualPlayerCount,actualBoardSize);
     }
+
+    /**
+     * Crée une partie de Morpion en associant explicitement les identifiants des joueurs aux jetons.
+     *
+     * @param playerIds liste des identifiants des joueurs (au moins 2 joueurs requis pour le Morpion).
+     * @param boardSize dimension du plateau (ou taille par défaut si null).
+     * @return l'instance de {@link Game} initialisée.
+     */
+     @Override
+     public Game createGame(Collection<UUID> playerIds, Integer boardSize){
+         int actualBoardSize = (boardSize != null) ? boardSize : defaultBoardSize;
+         // 1. Conversion sécurisée de Collection en Set
+         Set<UUID> playersSet = (playerIds instanceof Set<UUID> s) ? s : new LinkedHashSet<>(playerIds);
+         return factory.createGame(actualBoardSize, playersSet);
+     }
+
+
 }

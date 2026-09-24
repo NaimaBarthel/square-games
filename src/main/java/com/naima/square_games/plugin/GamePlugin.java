@@ -1,7 +1,10 @@
 package com.naima.square_games.plugin;
 
 import fr.le_campus_numerique.square_games.engine.Game;
+
+import java.util.Collection;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Contrat définissant le comportement d'un plugin de jeu intégrable au catalogue.
@@ -30,5 +33,15 @@ public interface GamePlugin
      * @return la partie initialisée
      */
     Game createGame(Integer playerCount, Integer boardSize);
+
+    /**
+     * Crée une nouvelle partie avec une collection d'identifiants de joueurs explicites.
+     * Permet d'associer le créateur de la partie (et ses adversaires) aux jetons de jeu.
+     *
+     * @param playerIds collection ordonnée des identifiants uniques ({@link UUID}) des participants.
+     * @param boardSize dimension du plateau souhaitée (peut être {@code null} pour la valeur par défaut).
+     * @return une nouvelle instance de {@link Game} initialisée avec les joueurs fournis.
+     */
+    Game createGame(Collection<UUID> playerIds, Integer boardSize);
 
 }

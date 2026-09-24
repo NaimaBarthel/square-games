@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 
 @Component
 public class ConnectFourPlugin implements GamePlugin {
@@ -41,4 +44,19 @@ public class ConnectFourPlugin implements GamePlugin {
         int actualBoardSize = (boardSize != null) ? boardSize : defaultBoardSize;
         return factory.createGame(actualPlayerCount,actualBoardSize);
     }
+
+    /**
+     * Crée une partie de Puissance4 en associant explicitement les identifiants des joueurs aux jetons.
+     *
+     * @param playerIds liste des identifiants des joueurs (au moins 2 joueurs requis pour le Morpion).
+     * @param boardSize dimension du plateau (ou taille par défaut si null).
+     * @return l'instance de {@link Game} initialisée.
+     */
+    @Override
+    public Game createGame(Collection<UUID> playerIds, Integer boardSize){
+        int actualBoardSize = (boardSize != null) ? boardSize : defaultBoardSize;
+        return factory.createGame(actualBoardSize, (Set<UUID>) playerIds);
+    }
+
+
 }
