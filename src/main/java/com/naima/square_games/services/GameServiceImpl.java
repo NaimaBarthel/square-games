@@ -227,16 +227,18 @@ public class GameServiceImpl implements GameService{
     public Collection<Game> getGamesForUser(String userId){
         UUID playerUuid = UUID.fromString(userId);
 
-        List<Game> allGames = gameDao.findAll().toList();
-        System.out.println(">>> TOTAL PARTIES DANS DAO : " + allGames.size());
-        for (Game g : allGames) {
-            System.out.println(">>> PARTIE : " + g.getId() + " - JOUEURS : " + g.getPlayerIds());
-        }
-
-        //On récupère toutes les parties du joueur userId depuis le DAO, et on filtre sur les joueurs
-        return allGames.stream()
+        //On récupère toutes les parties du joueur userId depuis le DAO, et on filtre sur le joueur
+        List<Game> allGamesForUser = gameDao.findAll()
                 .filter(game -> game.getPlayerIds().contains(playerUuid))
                 .toList();
+        System.out.println(">>> TOTAL PARTIES DANS DAO : " + allGamesForUser.size());
+        for (Game g : allGamesForUser) {
+            System.out.println(">>> PARTIE : " + g.getId() + " - JOUEURS : " + g.getPlayerIds());
+
+        }
+
+
+        return allGamesForUser;
 
     }
 }

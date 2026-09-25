@@ -9,8 +9,7 @@ import fr.le_campus_numerique.square_games.engine.Token;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Repository
@@ -29,6 +28,7 @@ public class JpaGameDao implements GameDao{
         return repository.findAll()
                 .stream()
                 .map(this::toGame);
+
     }
     
     @Override
@@ -54,7 +54,12 @@ public class JpaGameDao implements GameDao{
         entity.id = game.getId().toString();
         entity.factoryId = game.getFactoryId();
         entity.boardSize = game.getBoardSize();
-        entity.playerIds = game.getPlayerIds().toString();
+        //entity.playerIds = game.getPlayerIds().toString();
+        StringJoiner joiner = new StringJoiner(",");
+        for (UUID uuid : game.getPlayerIds()) {
+            joiner.add(uuid.toString());
+        }
+        entity.playerIds = joiner.toString(); // Enregistre proprement "uuid1,uuid2"
 
         //Conversion des jetons du jeu en GAmeTokenEntity
         if (game.getRemainingTokens() != null){
@@ -80,9 +85,30 @@ public class JpaGameDao implements GameDao{
                 .filter(p -> p.getId().equalsIgnoreCase(entity.factoryId))
                 .findFirst()
                 .orElseThrow(()-> new IllegalStateException("Aucun plugin trouvé pour le jeu : " + entity.factoryId));
-        
-        //Reconstruit l'instance du jeu via son plugin
-        return plugin.createGame(2, entity.boardSize);
+
+
+        List<UUID> players = new ArrayList<>();
+
+        if(entity.playerIds != null && !entity.playerIds.isBlank()) {
+
+            String cleaned = entity.playerIds
+                    .replace("[","")
+                    .replace("]","")
+                    .replace(" ","");
+
+            String[] tabPLayers = cleaned.split(",");
+            for (String item : tabPLayers){
+                String trimmed = item.trim();
+
+                if( !trimmed.isEmpty()){
+                    System.out.println(">>> TENTATIVE UUID: '" + trimmed + "' (longueur: " + trimmed.length() + ")");
+                    players.add(UUID.fromString(trimmed));
+                }
+            }
+        }
+
+        //Reconstruit l'instance du jeu via son plugin avec la liste des joueurs
+        return plugin.createGame(players, entity.boardSize);
     }
 
 }

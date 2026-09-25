@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
+import static com.naima.square_games.controllers.dto.GameDto.fromGame;
+
 @RestController
 @RequestMapping("/games")
 public class GameController {
@@ -53,7 +55,7 @@ public class GameController {
             Game game = gameService.createGame(userId, params);
             //return GameDto.fromGame(game);
             //HTTP 201 Created
-            return ResponseEntity.status(HttpStatus.CREATED).body(GameDto.fromGame(game));
+            return ResponseEntity.status(HttpStatus.CREATED).body(fromGame(game));
         } catch (SecurityException e) {
             //HTTP 403 Forbidden si l'utilisateur est inconnu dans square-users
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
@@ -179,12 +181,18 @@ public class GameController {
     @GetMapping
     public List<GameDto> getGamesForUser(@RequestHeader("X-UserId") String userId){
         System.out.println("GameController -- getGamesForuser>>> X-UserId validé : " + userId);
-        Collection<Game> games = gameService.getGamesForUser(userId)
-     /*   List<GameDto> dtos = games.stream()                  // 1. Ouvre le flux
+        Collection<Game> games = gameService.getGamesForUser(userId);
+        List<GameDto> dtos = new ArrayList<GameDto>();
+        //for (Game game : games) { dtos.add(GameDto.fromGame(game));
+        games.forEach(game -> dtos.add(GameDto.fromGame(game)));
+        return dtos;
+                /*   List<GameDto> dtos = games.stream()                  // 1. Ouvre le flux
                 .map(GameDto::fromGame)    // 2. Transforme chaque Game en GameDto
                 .toList();                 // 3. Rassemble dans une List*/
-        return games.stream()
-                .map(GameDto::fromGame)    // 2. Transforme chaque Game en GameDto
+/*/              //  stream()
+//                .map(GameDto::fromGame)    // 2. Transforme chaque Game en GameDto
                 .toList();
+
+ */
     }
 }
