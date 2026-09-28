@@ -183,16 +183,8 @@ public class GameController {
         System.out.println("GameController -- getGamesForuser>>> X-UserId validé : " + userId);
         Collection<Game> games = gameService.getGamesForUser(userId);
         List<GameDto> dtos = new ArrayList<GameDto>();
-        //for (Game game : games) { dtos.add(GameDto.fromGame(game));
         games.forEach(game -> dtos.add(GameDto.fromGame(game)));
         return dtos;
-                /*   List<GameDto> dtos = games.stream()                  // 1. Ouvre le flux
-                .map(GameDto::fromGame)    // 2. Transforme chaque Game en GameDto
-                .toList();                 // 3. Rassemble dans une List*/
-/*/              //  stream()
-//                .map(GameDto::fromGame)    // 2. Transforme chaque Game en GameDto
-                .toList();
 
- */
     }
 }

@@ -107,8 +107,8 @@ public class JpaGameDao implements GameDao{
             }
         }
 
-        //Reconstruit l'instance du jeu via son plugin avec la liste des joueurs
-        return plugin.createGame(players, entity.boardSize);
+        //Reconstruit l'instance du jeu via l'UUID du joueur
+        return plugin.reloadGame(UUID.fromString(entity.id),players, entity.boardSize);
     }
 
 }

@@ -2,15 +2,13 @@ package com.naima.square_games.plugin;
 
 import fr.le_campus_numerique.square_games.engine.Game;
 import fr.le_campus_numerique.square_games.engine.GameFactory;
+import fr.le_campus_numerique.square_games.engine.InconsistentGameDefinitionException;
 import fr.le_campus_numerique.square_games.engine.connectfour.ConnectFourGameFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 public class ConnectFourPlugin implements GamePlugin {
@@ -58,5 +56,27 @@ public class ConnectFourPlugin implements GamePlugin {
         return factory.createGame(actualBoardSize, (Set<UUID>) playerIds);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Reconstruit une partie de Puissance 4 à partir de l'identifiant persistant,
+     * de la taille du plateau et des deux joueurs participants.
+     * </p>
+     *
+     * @param gameId identifiant unique d'origine de la partie issu de la persistance
+     * @param players liste ordonnée des identifiants des joueurs
+     * @param boardSize dimension du plateau de jeu
+     * @return l'instance de {@link Game} réinitialisée avec son identifiant préservé
+     * @throws RuntimeException si les contraintes du moteur Puissance 4 ne sont pas respectées
+     */
+    @Override
+    public Game reloadGame(UUID gameId, List<UUID> players, int boardSize) {
+        int actualBoardSize = (boardSize > 0) ? boardSize : defaultBoardSize;
+        try {
+            return factory.createGameWithIds(gameId, actualBoardSize, players, List.of(), List.of());
+        } catch (InconsistentGameDefinitionException e) {
+            throw new RuntimeException("Erreur lors de la reconstruction de la partie de Puissance 4 : " + gameId, e);
+        }
+    }
 
 }

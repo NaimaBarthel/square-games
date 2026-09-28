@@ -3,6 +3,7 @@ package com.naima.square_games.plugin;
 import fr.le_campus_numerique.square_games.engine.Game;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -43,5 +44,19 @@ public interface GamePlugin
      * @return une nouvelle instance de {@link Game} initialisée avec les joueurs fournis.
      */
     Game createGame(Collection<UUID> playerIds, Integer boardSize);
+
+    /**
+     * Reconstruit une instance existante de {@link Game} en restaurant son identifiant d'origine
+     * et l'état initial de son plateau.
+     *
+     * @param gameId l'identifiant unique d'origine de la partie issu de la persistance
+     * @param players la liste ordonnée des identifiants des joueurs prenant part à la partie
+     * @param boardSize la dimension d'un côté du plateau de jeu carré
+     * @return l'instance de {@link Game} réinitialisée avec son identifiant préservé
+     * @throws RuntimeException si les paramètres fournis ne permettent pas d'instancier le moteur de jeu
+     */
+
+    Game reloadGame(UUID gameId, List<UUID> players, int boardSize);
+
 
 }
