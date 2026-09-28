@@ -99,7 +99,6 @@ public class GameServiceImpl implements GameService{
         //Ajout d'un adversaire par défaut (le 2e joueur) avec UUID créé aléatoirement
         players.add(UUID.randomUUID());
 
-        System.out.println("GameServiceImpl -- createGame players : >>>> " + players.toString());
         // 3. Initialisation du plateau avec les joueurs définis
         Game game = plugin.createGame(players, params.boardSize());
 
@@ -143,14 +142,7 @@ public class GameServiceImpl implements GameService{
      */
     @Override
     public Collection<CellPosition> getAllowedMoves(UUID gameId, String tokenId) {
-       /* A supprimer pour injecter DAO
-        Game game = games.get(gameId);
 
-        if (game == null) {
-            return Set.of(); // Si la partie n'existe pas, liste vide
-        }
-
-        */
         // 1. Recherche de la partie via le DAO
         Optional<Game> gameOptional = gameDao.findById(gameId.toString());
 
@@ -183,14 +175,7 @@ public class GameServiceImpl implements GameService{
      */
     @Override
     public Game makeMove(String userId,UUID gameId, MoveParams moveParams) throws InvalidPositionException {
-         /* A supprimer pour injecter DAO
-        Game game = games.get(gameId);
-         // On vérifie si la partie demandée existe dans la Map en mémoire
-        if(game == null){
-            //Si la partie n'existe pas, on lève une exception
-            throw new NoSuchElementException("Partie introuvable : "+ gameId);
-        }
-        */
+
         // 1. Récupération de la partie depuis le DAO ou levée d'une exception si absente
         Game game = gameDao.findById(gameId.toString())
                 .orElseThrow(() -> new NoSuchElementException("Partie introuvable : " + gameId));
@@ -208,9 +193,6 @@ public class GameServiceImpl implements GameService{
         }
         // 4. Exécuter le coup sur le plateau
         currentToken.moveTo(moveParams.position());
-        /* A supprimer pour injecter DAO
-        return game;
-        */
 
         // 5. Enregistrement de l'état modifié dans le DAO et retour du jeu
         return gameDao.upsert(game);
@@ -231,12 +213,6 @@ public class GameServiceImpl implements GameService{
         List<Game> allGamesForUser = gameDao.findAll()
                 .filter(game -> game.getPlayerIds().contains(playerUuid))
                 .toList();
-        System.out.println(">>> TOTAL PARTIES DANS DAO : " + allGamesForUser.size());
-        for (Game g : allGamesForUser) {
-            System.out.println(">>> PARTIE : " + g.getId() + " - JOUEURS : " + g.getPlayerIds());
-
-        }
-
 
         return allGamesForUser;
 

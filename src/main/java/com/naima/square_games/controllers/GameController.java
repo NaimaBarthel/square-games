@@ -7,6 +7,15 @@ import com.naima.square_games.controllers.dto.MoveParams;
 import fr.le_campus_numerique.square_games.engine.CellPosition;
 import fr.le_campus_numerique.square_games.engine.Game;
 import fr.le_campus_numerique.square_games.engine.InvalidPositionException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +26,7 @@ import static com.naima.square_games.controllers.dto.GameDto.fromGame;
 
 @RestController
 @RequestMapping("/games")
+@Tag(name = "Gestion des Jeux", description = "Endpoints pour créer des parties, lister les jeux en cours et soumettre des déplacements.")
 public class GameController {
 
     private final GameService gameService;
@@ -48,9 +58,22 @@ public class GameController {
      *               définissant notamment le type de jeu, les dimensions ou les joueurs.
      * @return un {@link GameDto} contenant les informations clés de la partie nouvellement créée.
      */
+    @Operation(
+            summary = "Créer une nouvelle partie",
+            description = "Initialise un plateau de jeu selon le type demandé. Vérifie au préalable l'existence de l'utilisateur créateur via le service square-users."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Partie créée avec succès",
+                    content = @Content(schema = @Schema(implementation = GameDto.class))),
+            @ApiResponse(responseCode = "400", description = "Paramètres de création non valides"),
+            @ApiResponse(responseCode = "403", description = "Identifiant utilisateur non reconnu ou inexistant")
+    })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<?> createGame(@RequestHeader("X-UserId") String userId, @RequestBody GameCreationParams params) {
+    public ResponseEntity<?> createGame(
+            @Parameter(name = "X-UserId", in = ParameterIn.HEADER, description = "Identifiant UUID du joueur créateur", required = true, example = "fb20f8b4-c32c-43cf-8b4e-0418880ae115")
+            @RequestHeader("X-UserId") String userId,
+            @RequestBody GameCreationParams params) {
         try {
             Game game = gameService.createGame(userId, params);
             //return GameDto.fromGame(game);
@@ -81,8 +104,19 @@ public class GameController {
      *           <li>{@code 404 Not Found} si aucune partie ne correspond à cet identifiant.</li>
      *         </ul>
      */
+    @Operation(
+            summary = "Obtenir l'état d'une partie par son identifiant",
+            description = "Recherche la partie correspondant à l'identifiant fourni et retourne son état complet."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Partie trouvée",
+                    content = @Content(schema = @Schema(implementation = Game.class))),
+            @ApiResponse(responseCode = "404", description = "Aucune partie ne correspond à cet identifiant")
+    })
     @GetMapping("/{gameId}")
-    public ResponseEntity<Game> getGame(@PathVariable UUID gameId){
+    public ResponseEntity<Game> getGame(
+            @Parameter(description = "Identifiant unique UUID de la partie", required = true, example = "007af496-24e4-4a16-a1b9-2a9df185e01b")
+            @PathVariable UUID gameId){
       //  return gameService.getGame(gameId).map(ResponseEntity::ok).orElseGet(()->ResponseEntity.notFound().build());
         Optional<Game> gameOptional = gameService.getGame(gameId);
         if (gameOptional.isPresent()){
@@ -112,9 +146,20 @@ public class GameController {
      *           <li>{@code 404 Not Found} si la partie n'existe pas, si le jeton n'est pas trouvé, ou si aucun coup n'est autorisé.</li>
      *         </ul>
      */
+    @Operation(
+            summary = "Obtenir les coups possibles pour un jeton",
+            description = "Récupère l'ensemble des coordonnées autorisées pour un jeton donné au sein d'une partie."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Liste des positions accessibles",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = CellPosition.class)))),
+            @ApiResponse(responseCode = "404", description = "Partie inexistante, jeton introuvable ou aucun coup possible")
+    })
     @GetMapping("/{gameId}/tokens/{tokenId}/moves")
     public ResponseEntity<Collection<CellPosition>> getAllowedMoves(
+            @Parameter(description = "Identifiant unique UUID de la partie", required = true, example = "007af496-24e4-4a16-a1b9-2a9df185e01b")
             @PathVariable UUID gameId,
+            @Parameter(description = "Identifiant ou nom du jeton (ex. 'X', 'O' ou UUID du token)", required = true, example = "X")
             @PathVariable String tokenId
     ){
         Collection<CellPosition> moves = gameService.getAllowedMoves(gameId,tokenId);
@@ -147,9 +192,22 @@ public class GameController {
      *               déjà occupée, ou si aucun coup n'est autorisé.</li>
      *         </ul>
      */
+    @Operation(
+            summary = "Jouer un coup",
+            description = "Place un jeton aux coordonnées transmises. Rejette l'action si ce n'est pas le tour du joueur ou si le coup est invalide."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Coup validé et partie mise à jour",
+                    content = @Content(schema = @Schema(implementation = Game.class))),
+            @ApiResponse(responseCode = "400", description = "Position invalide ou case occupée"),
+            @ApiResponse(responseCode = "403", description = "Ce n'est pas votre tour de jouer !"),
+            @ApiResponse(responseCode = "404", description = "Partie introuvable")
+    })
     @PostMapping("/{gameId}/moves")
     public ResponseEntity<?> makeMove(
+            @Parameter(name = "X-UserId", in = ParameterIn.HEADER, description = "Identifiant UUID du joueur tentant l'action", required = true, example = "fb20f8b4-c32c-43cf-8b4e-0418880ae115")
             @RequestHeader("X-UserId") String userId,
+            @Parameter(description = "Identifiant unique UUID de la partie", required = true, example = "007af496-24e4-4a16-a1b9-2a9df185e01b")
             @PathVariable UUID gameId,
             @RequestBody MoveParams moveParams
     ){
@@ -178,8 +236,18 @@ public class GameController {
      * @param userId l'identifiant du joueur extrait de l'en-tête HTTP {@code X-UserId}.
      * @return la liste des {@link GameDto} représentant les parties associées au joueur.
      */
+    @Operation(
+            summary = "Lister les parties d'un joueur",
+            description = "Retourne l'ensemble des parties en base auxquelles participe le joueur spécifié dans l'en-tête X-UserId."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Liste des parties du joueur récupérée avec succès",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = GameDto.class))))
+    })
     @GetMapping
-    public List<GameDto> getGamesForUser(@RequestHeader("X-UserId") String userId){
+    public List<GameDto> getGamesForUser(
+            @Parameter(name = "X-UserId", in = ParameterIn.HEADER, description = "Identifiant UUID du joueur", required = true, example = "fb20f8b4-c32c-43cf-8b4e-0418880ae115")
+            @RequestHeader("X-UserId") String userId){
         System.out.println("GameController -- getGamesForuser>>> X-UserId validé : " + userId);
         Collection<Game> games = gameService.getGamesForUser(userId);
         List<GameDto> dtos = new ArrayList<GameDto>();

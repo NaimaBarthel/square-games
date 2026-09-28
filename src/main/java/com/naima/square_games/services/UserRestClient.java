@@ -3,6 +3,7 @@ package com.naima.square_games.services;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @Service
@@ -46,12 +47,12 @@ public class UserRestClient {
                     .toBodilessEntity()
                     .getStatusCode()
                     .is2xxSuccessful();
-        }catch (Exception e) {
+        }catch (HttpClientErrorException.NotFound e) {
+            //404 Not found renvoyé par square-users -> utilisateur inconnu
+            return false;
+        } catch (Exception e) {
+            //Erreur de connexion ou autre
             return false;
         }
-
     }
-
-
-
 }
