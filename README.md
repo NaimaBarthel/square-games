@@ -278,18 +278,8 @@ Depuis l'interface web, vous pouvez renseigner directement le paramètre d'en-t�
 
 L'autorisation repose actuellement sur l'en-tête déclaratif `X-UserId`.
 
-Ce système pédagogique permet de mettre en pratique la délégation de contrôle entre microservices. La signature cryptographique des requêtes (tokens signés JWT) sera introduite lors de la prochaine itération.
+Ce système pédagogique permet de mettre en pratique la délégation de contrôle entre microservices. La signature cryptographique des requêtes (tokens signés JWT) sera introduite très bientôt.
 EOF
 
 ```
 
----
-
-### Commandes pour pousser sur GitHub :
-
-```bash
-git add README.md
-git commit -m "docs: add comprehensive README for square-games"
-git push origin HEAD
-
-```
